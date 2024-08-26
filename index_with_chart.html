@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soll ich Bitcoin kaufen?</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: #007bff;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin: 0.5rem 0;
+        }
+
+        canvas {
+            max-width: 100%;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Soll ich Bitcoin kaufen?</h1>
+        <p>Bitcoin-Preis in Euro: <span id="btc-price-eur">Lädt...</span></p>
+        <p>Bitcoin-Preis in Dollar: <span id="btc-price-usd">Lädt...</span></p>
+        <p>Empfehlung: Nicht kaufen</p>
+    </div>
+    
+    <canvas id="priceChart"></canvas>
+
+    <script>
+        async function fetchBitcoinPrices() {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur,usd');
+                const data = await response.json();
+                document.getElementById('btc-price-eur').textContent = '€' + data.bitcoin.eur.toFixed(2);
+                document.getElementById('btc-price-usd').textContent = '$' + data.bitcoin.usd.toFixed(2);
+            } catch (error) {
+                document.getElementById('btc-price-eur').textContent = 'Preis nicht verfügbar';
+                document.getElementById('btc-price-usd').textContent = 'Preis nicht verfügbar';
+            }
+        }
+
+        async function fetchPriceChart() {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7');
+                const data = await response.json();
+                const prices = data.prices.map(price => ({ time: new Date(price[0]), value: price[1] }));
+                
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: prices.map(p => p.time.toLocaleDateString() + ' ' + p.time.toLocaleTimeString()),
+                        datasets: [{
+                            label: 'Bitcoin Preis in USD (letzte 7 Tage)',
+                            data: prices.map(p => p.value),
+                            borderColor: '#007bff',
+                            fill: false,
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day'
+                                }
+                            },
+                            y: {
+                                beginAtZero: false
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Fehler beim Laden der Preisdaten für die Chart.');
+            }
+        }
+
+        fetchBitcoinPrices();
+        fetchPriceChart();
+    </script>
+</body>
+</html>
